@@ -1,0 +1,25 @@
+{
+  "name": "litertjs-webcam-detection",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --open"
+  },
+  "dependencies": {
+    "@litertjs/core": "^0.1.1",
+    "@litertjs/tfjs-interop": "^0.1.1",
+    "@tensorflow/tfjs": "^4.22.0",
+    "@tensorflow/tfjs-core": "^4.22.0",
+    "@tensorflow/tfjs-backend-webgpu": "^4.22.0",
+    "@tensorflow/tfjs-backend-wasm": "^4.22.0",
+    "@tensorflow-models/mobilenet": "^2.1.0",
+    "@tensorflow-models/body-pix": "^2.2.0",
+    "@tensorflow-models/body-segmentation": "^1.0.2"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

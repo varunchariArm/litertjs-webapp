@@ -1,0 +1,68 @@
+:root {
+  --bg: #0b1020;
+  --panel: #0f1530;
+  --ink: #e9eefc;
+  --muted: #9fb0dd;
+  --accent: #7aa2ff;
+  --good: #19c37d;
+  --warn: #ffb020;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+  background: var(--bg); color: var(--ink);
+}
+.app-header, .app-footer { padding: 16px 20px; background: var(--panel); }
+.app-header { display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #1d264a; }
+.app-header h1 { margin: 0; font-size: 18px; font-weight: 700; }
+.status { font-size: 12px; color: var(--muted); }
+.pill.gpu { margin-left: auto; }
+.app-main { display: grid; grid-template-columns: 1fr 300px; gap: 16px; padding: 16px; }
+.stage { position: relative; background: #060a18; border: 1px solid #1d264a; border-radius: 14px; overflow: hidden; }
+#webcam, #overlay { width: 100%; height: auto; display: block; }
+#perf { margin-left: auto; color: var(--muted); }
+#segCtl output, #alphaCtl output { color: var(--ink); font-variant-numeric: tabular-nums; }
+.controls { background: var(--panel); border: 1px solid #1d264a; border-radius: 14px; padding: 12px; display: grid; gap: 12px; height: fit-content; }
+.control { display: grid; gap: 6px; }
+.control.row { grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; align-items: center; }
+.control label { font-size: 12px; color: var(--muted); }
+.pill { display: inline-block; background: #1b2752; border: 1px solid #26336a; padding: 2px 8px; border-radius: 999px; font-size: 12px; color: var(--ink); }
+.btn { cursor: pointer; border: 1px solid #2a3a76; background: #1a2450; color: var(--ink); padding: 10px 12px; border-radius: 10px; font-weight: 600; }
+.btn-secondary { background: #131a3d; border-color: #2a2f57; }
+.btn-inline { margin-top: 6px; }
+.btn-accent { background: #223064; border-color: #3a4db5; }
+input[type=range] { width: 100%; }
+code { background: #0a1128; padding: 2px 6px; border-radius: 6px; }
+
+/* ==== Controls: make all fields full-width with consistent rounded outline ==== */
+.controls .control select,
+.controls .control input[type="range"],
+.controls .control pre,
+.controls .control button,
+.controls .control .btn,
+.controls .control .btn-secondary,
+.controls .control .btn-accent {
+  width: 100%;
+}
+
+.controls .control select,
+.controls .control pre {
+  background: #131a3d;
+  border: 1px solid #2a2f57;
+  border-radius: 10px;
+  color: var(--ink);
+  padding: 10px 12px;
+}
+
+/* Wrap long model paths so they don't spill outside the rounded box */
+#modelPath {
+  white-space: pre-wrap;
+  word-break: break-all;
+  display: block;
+}
+
+/* Align inline toggle button to full width of panel */
+#toggleBackendBtn.btn-inline { width: 100%; }
+
+/* Ensure the controls panel grows to fit content and keeps rounded border */
+.controls { overflow: hidden; }

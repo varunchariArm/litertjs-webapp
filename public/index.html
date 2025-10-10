@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LiteRT.js Webcam Classification & Segmentation</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>LiteRT.js • Webcam Classification & Segmentation</h1>
+    <div class="status" id="status">loading…</div>
+    <div class="pill gpu" id="gpuInfo">GPU: —</div>
+  </header>
+
+  <main class="app-main">
+    <section class="stage">
+      <video id="webcam" playsinline autoplay muted></video>
+      <canvas id="overlay"></canvas>
+      <div class="status" id="perf">—</div>
+    </section>
+
+    <aside class="controls">
+      <div class="control">
+        <label>Task</label>
+        <select id="taskSelect">
+          <option value="classification" selected>Classification (ImageNet)</option>
+          <option value="selfie">Segmentation (Selfie — person)</option>
+          <option value="selfie-mc">Segmentation (Selfie Multiclass)</option>
+        </select>
+      </div>
+      <div class="control">
+        <label>Backend</label>
+        <select id="backendSelect">
+          <option value="webgpu">WebGPU</option>
+          <option value="wasm">WASM</option>
+        </select>
+        <button id="toggleBackendBtn" class="btn btn-inline" title="Toggle backend">Toggle Backend</button>
+      </div>
+      <div class="control" id="segCtl">
+        <label>Segmentation interval (ms)</label>
+        <input type="range" id="segInterval" min="0" max="200" step="10" value="0" />
+        <output id="segIntervalOut">0</output>
+      </div>
+      <div class="control" id="alphaCtl">
+        <label>Overlay alpha</label>
+        <input type="range" id="overlayAlpha" min="0" max="1" step="0.05" value="0.5" />
+        <output id="overlayAlphaOut">0.50</output>
+      </div>
+      <div class="control" id="startStopCtl">
+        <button id="startBtn">Start</button>
+        <button id="stopBtn" disabled>Stop</button>
+        <button id="benchBtn" class="btn btn-accent" title="Run quick benchmark">Benchmark</button>
+      </div>
+      <div class="control">
+        <label>CPU Comparison (LiteRT WASM vs TFJS-CPU)</label>
+        <div class="control row">
+          <button id="compareClsBtn" class="btn btn-secondary" title="Compare classification (ImageNet)">Compare Classification</button>
+          <button id="compareSegBtn" class="btn btn-secondary" title="Compare segmentation (selected)">Compare Segmentation</button>
+        </div>
+        <div class="status" id="compareStatus">—</div>
+      </div>
+      <div class="control">
+        <label>Model path</label>
+        <pre id="modelPath"></pre>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <p>Models: MobileNet V2 (ImageNet) / Selfie Segmentation. Powered by LiteRT.js + WebGPU.</p>
+  </footer>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

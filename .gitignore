@@ -1,0 +1,28 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+
+# Vite build output
+dist/
+
+# Local env/editor
+.DS_Store
+*.local
+.vscode/
+.idea/
+
+# TFJS wasm baseline copies (if any)
+public/tfwasm/
+
+# LiteRT wasm runtime (copied at install/run)
+public/wasm/
+
+# Models (optional: keep or ignore as you prefer)
+# Uncomment if you don’t want to check models in
+# public/models/*.tflite
+# public/models/*.json
+# public/models/*.txt
