@@ -39,17 +39,17 @@ let lastSegTs = 0;          // segmentation throttle timestamp
       if (adapter?.requestAdapterInfo) {
         const info = await adapter.requestAdapterInfo();
         if (els.gpuInfo) {
-          els.gpuInfo.textContent = `GPU: ${info.vendor || '—'} (${info.architecture || '—'}) • Backend: ${info.backend || '—'}`;
+          setGpuInfoBase(`GPU: ${info.vendor || '—'} (${info.architecture || '—'}) • Backend: ${info.backend || '—'}`);
         }
       } else if (els.gpuInfo) {
-        els.gpuInfo.textContent = 'GPU: WebGPU available';
+        setGpuInfoBase('GPU: WebGPU available');
       }
     } else if (els.gpuInfo) {
-      els.gpuInfo.textContent = 'GPU: WebGPU not available';
+      setGpuInfoBase('GPU: WebGPU not available');
     }
   } catch (e) {
     console.warn(e);
-    if (els.gpuInfo) els.gpuInfo.textContent = 'GPU: —';
+    setGpuInfoBase('GPU: —');
   }
 })();
 
@@ -98,6 +98,20 @@ document.addEventListener('visibilitychange', () => {
 let runner;                 // Classifier or Segmenter
 let running = false;
 let rafId = null;
+
+function setGpuInfoBase(text) {
+  const el = els.gpuInfo;
+  if (!el) return;
+  el.dataset.base = text;             // keep a stable first line
+  el.textContent = `${text}\n FPS`;  // placeholder until first FPS update
+}
+function setGpuFps(fps) {
+  const el = els.gpuInfo;
+  if (!el) return;
+  const base = el.dataset.base || (el.textContent?.split('\n')[0] || 'GPU: —');
+  el.textContent = `${base}\n${Number(fps).toFixed(1)} FPS`;  // always overwrite with latest
+}
+
 
 // --- Progress bar helpers (use pre-declared HTML elements with .progress/.progress__bar) ---
 function ensureProgressBar(afterEl, id) {
@@ -398,11 +412,7 @@ function loop(ts = performance.now()) {
           if (perfEl && (t0 - lastPerfUpdate) > PERF_UPDATE_MS) {
             perfEl.textContent = `${runner.backendName} • ${runner.type} • ${fpsEMA.toFixed(1)} FPS`;
             lastPerfUpdate = t0;
-            // Append live FPS to GPU info pill
-            if (els.gpuInfo) {
-              const base = els.gpuInfo.textContent || '';
-              els.gpuInfo.textContent = base.replace(/\s•\s[0-9.]+\sFPS$/, '') + ` • ${fpsEMA.toFixed(1)} FPS`;
-            }
+            setGpuFps(fpsEMA);
           }
         })
         .catch(console.error);

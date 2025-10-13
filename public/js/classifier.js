@@ -14,7 +14,7 @@ async function assertAsset(url) {
 }
 
 export class Classifier {
-  constructor({ modelUrl, labelsUrl, wasmPath, accelerator = 'webgpu', topK = 5 }) {
+  constructor({ modelUrl, labelsUrl, wasmPath, accelerator = 'webgpu', topK = 1 }) {
     this.modelUrl = modelUrl;
     this.labelsUrl = labelsUrl;
     this.wasmPath = wasmPath;
