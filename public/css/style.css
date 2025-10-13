@@ -66,3 +66,24 @@ code { background: #0a1128; padding: 2px 6px; border-radius: 6px; }
 
 /* Ensure the controls panel grows to fit content and keeps rounded border */
 .controls { overflow: hidden; }
+
+/* Progress bars for benchmark / comparison */
+.progress {
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  overflow: hidden;
+  display: none; /* toggled by JS */
+  margin-top: 6px;
+}
+.progress__bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent, #7aa2ff), var(--good, #19c37d));
+  transition: width 120ms linear;
+}
+
+/* Make sure progress bars align nicely inside control rows */
+.control .progress { grid-column: 1 / -1; }

@@ -51,12 +51,15 @@
         <button id="startBtn">Start</button>
         <button id="stopBtn" disabled>Stop</button>
         <button id="benchBtn" class="btn btn-accent" title="Run quick benchmark">Benchmark</button>
+        <div class="progress" id="progress-bench"><div class="progress__bar"></div></div>
       </div>
       <div class="control">
         <label>CPU Comparison (LiteRT WASM vs TFJS-CPU)</label>
         <div class="control row">
           <button id="compareClsBtn" class="btn btn-secondary" title="Compare classification (ImageNet)">Compare Classification</button>
+          <div class="progress" id="progress-compare-cls"><div class="progress__bar"></div></div>
           <button id="compareSegBtn" class="btn btn-secondary" title="Compare segmentation (selected)">Compare Segmentation</button>
+          <div class="progress" id="progress-compare-seg"><div class="progress__bar"></div></div>
         </div>
         <div class="status" id="compareStatus">—</div>
       </div>

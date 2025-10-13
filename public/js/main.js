@@ -99,6 +99,30 @@ let runner;                 // Classifier or Segmenter
 let running = false;
 let rafId = null;
 
+// --- Progress bar helpers (use pre-declared HTML elements with .progress/.progress__bar) ---
+function ensureProgressBar(afterEl, id) {
+  // HTML provides these; just return if present
+  return document.getElementById(id);
+}
+function setProgress(id, pct) {
+  const wrap = document.getElementById(id);
+  if (!wrap) return;
+  const bar = wrap.querySelector('.progress__bar');
+  if (bar) bar.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+}
+function showProgress(id, show) {
+  const wrap = document.getElementById(id);
+  if (wrap) wrap.style.display = show ? 'block' : 'none';
+}
+function setModelPathHintFor(task) {
+  if (!els.modelPath) return;
+  els.modelPath.textContent =
+    task === 'classification' ? 'models/torchvision_mobilenet_v2.tflite' :
+    task === 'selfie'         ? 'models/selfie_general_256x256.tflite' :
+    task === 'selfie-mc'      ? 'models/selfie_multiclass_256x256.tflite' :
+                                'models/torchvision_mobilenet_v2.tflite';
+}
+
 // --- Classification throttling state ---
 const CLASSIFY_INTERVAL_MS = 200;  // ~5 FPS
 let classifyInFlight = false;
@@ -119,11 +143,7 @@ els.startBtn.addEventListener("click", async () => {
     resizeCanvasToVideo(els.canvas, els.video);
 
     const task = els.taskSelect ? els.taskSelect.value : 'classification';
-    els.modelPath.textContent =
-      task === 'classification' ? 'models/torchvision_mobilenet_v2.tflite' :
-      task === 'selfie'         ? 'models/selfie_general_256x256.tflite' :
-      task === 'selfie-mc'      ? 'models/selfie_multiclass_256x256.tflite' :
-                                  'models/torchvision_mobilenet_v2.tflite';
+    setModelPathHintFor(task);
 
     const backend = els.backendSelect.value;
 
@@ -250,6 +270,11 @@ if (els.toggleBackendBtn) {
 if (els.benchBtn) {
   els.benchBtn.addEventListener('click', async () => {
     try {
+      const PB_ID = 'progress-bench';
+      ensureProgressBar(els.benchBtn, PB_ID);
+      showProgress(PB_ID, true);
+      setProgress(PB_ID, 0);
+
       const task = els.taskSelect ? els.taskSelect.value : 'classification';
       const backends = ['webgpu', 'wasm'];
       const results = [];
@@ -287,9 +312,11 @@ if (els.benchBtn) {
         }
       };
 
-      // Warmup/Run counts per task
-      const WARM = task === 'classification' ? 10 : 5;
-      const RUNS = task === 'classification' ? 50 : 20;
+      let totalSteps = 0;
+      const WARM_C = (task === 'classification') ? 10 : 5;
+      const RUNS_C = (task === 'classification') ? 50 : 20;
+      totalSteps = backends.length * (1 /*init*/ + WARM_C + RUNS_C);
+      let step = 0;
 
       for (const b of backends) {
         if (els.status) els.status.textContent = `benchmark • init ${b}…`;
@@ -297,25 +324,28 @@ if (els.benchBtn) {
         const r = await makeRunner(task, b);
         const tInit0 = performance.now();
         await r.init();
+        step++; setProgress(PB_ID, (step/totalSteps)*100);
         const tInit1 = performance.now();
 
         // Warmup
-        for (let i = 0; i < WARM; i++) {
+        for (let i = 0; i < WARM_C; i++) {
           const out = await r.run(els.video);
           (out && out.forEach && out.forEach(t => t?.dispose?.()));
+          step++; setProgress(PB_ID, (step/totalSteps)*100);
         }
 
         // Time only run()
         const t0 = performance.now();
-        for (let i = 0; i < RUNS; i++) {
+        for (let i = 0; i < RUNS_C; i++) {
           const out = await r.run(els.video);
           (out && out.forEach && out.forEach(t => t?.dispose?.()));
+          step++; setProgress(PB_ID, (step/totalSteps)*100);
         }
         const t1 = performance.now();
 
         const initMs = (tInit1 - tInit0).toFixed(1);
-        const avgMs = ((t1 - t0) / RUNS).toFixed(1);
-        const fps = (1000 / ((t1 - t0) / RUNS)).toFixed(1);
+        const avgMs = ((t1 - t0) / RUNS_C).toFixed(1);
+        const fps = (1000 / ((t1 - t0) / RUNS_C)).toFixed(1);
 
         results.push({ backend: b.toUpperCase(), initMs, avgMs, fps });
       }
@@ -325,8 +355,10 @@ if (els.benchBtn) {
           `benchmark → ` +
           results.map(r => `${r.backend}: init ${r.initMs} ms, ${r.avgMs} ms (${r.fps} FPS)`).join(' • ');
       }
+      showProgress(PB_ID, false);
     } catch (err) {
       console.error(err);
+      showProgress('progress-bench', false);
       if (els.status) els.status.textContent = `benchmark error: ${err?.message || err}`;
     }
   });
@@ -416,6 +448,12 @@ function loop(ts = performance.now()) {
 if (els.compareClsBtn) {
   els.compareClsBtn.addEventListener('click', async () => {
     try {
+      setModelPathHintFor('classification');
+      const PB_ID = 'progress-compare-cls';
+      ensureProgressBar(els.compareClsBtn, PB_ID);
+      showProgress(PB_ID, true);
+      setProgress(PB_ID, 0);
+
       const tfmod = await import('@tensorflow/tfjs');
       const tf = tfmod.default || tfmod;
       await setupWebcam(els.video, { width: 640, height: 480 });
@@ -448,6 +486,8 @@ if (els.compareClsBtn) {
       inputNHWC_on.dispose();
       model.dispose?.();
 
+      setProgress(PB_ID, 33);
+
       const avgT = (t1 - t0) / RUNS_T;
       results.push({ backend: 'TFJS-CPU', avgMs: avgT.toFixed(1), fps: (1000/avgT).toFixed(1) });
 
@@ -460,6 +500,7 @@ if (els.compareClsBtn) {
         accelerator: 'wasm',
       });
       await r.init();
+      setProgress(PB_ID, 70);
 
       const { runWithTfjsTensors } = await import('@litertjs/tfjs-interop');
       const inputNCHW_on = inputNCHW.clone();
@@ -467,12 +508,16 @@ if (els.compareClsBtn) {
       for (let i = 0; i < WARM_L; i++) {
         runWithTfjsTensors(r.model, inputNCHW_on).forEach(t => t.dispose?.());
       }
+      setProgress(PB_ID, 85);
       const l0 = performance.now();
       for (let i = 0; i < RUNS_L; i++) {
         runWithTfjsTensors(r.model, inputNCHW_on).forEach(t => t.dispose?.());
       }
       const l1 = performance.now();
       inputNCHW_on.dispose();
+
+      setProgress(PB_ID, 100);
+      showProgress(PB_ID, false);
 
       const avgL = (l1 - l0) / RUNS_L;
       results.push({ backend: 'LiteRT WASM (XNNPACK)', avgMs: avgL.toFixed(1), fps: (1000/avgL).toFixed(1) });
@@ -487,6 +532,7 @@ if (els.compareClsBtn) {
       }
     } catch (err) {
       console.error(err);
+      showProgress('progress-compare-cls', false);
       if (els.compareStatus) els.compareStatus.textContent = `comparison error: ${err?.message || err}`;
     }
   });
@@ -496,6 +542,12 @@ if (els.compareClsBtn) {
 if (els.compareSegBtn) {
   els.compareSegBtn.addEventListener('click', async () => {
     try {
+      setModelPathHintFor('selfie');
+      const PB_ID = 'progress-compare-seg';
+      ensureProgressBar(els.compareSegBtn, PB_ID);
+      showProgress(PB_ID, true);
+      setProgress(PB_ID, 0);
+
       await setupWebcam(els.video, { width: 640, height: 480 });
 
       // --- TFJS-CPU baseline via @tensorflow-models/body-segmentation ---
@@ -516,9 +568,11 @@ if (els.compareSegBtn) {
       const tfSeg = await bodySeg.createSegmenter(tfModelEnum, tfOptions);
       const WARM_T = 3, RUNS_T = 10;
       for (let i = 0; i < WARM_T; i++) { await tfSeg.segmentPeople(els.video); }
+      setProgress(PB_ID, 30);
       const t0 = performance.now();
       for (let i = 0; i < RUNS_T; i++) { await tfSeg.segmentPeople(els.video); }
       const t1 = performance.now();
+      setProgress(PB_ID, 55);
       const tfjsAvgMs = (t1 - t0) / RUNS_T;
       const tfjsFps = 1000 / tfjsAvgMs;
 
@@ -537,13 +591,17 @@ if (els.compareSegBtn) {
 
       const tInit0 = performance.now();
       await seg.init();
+      setProgress(PB_ID, 70);
       const tInit1 = performance.now();
 
       const WARM = 5, RUNS = 20;
       for (let i = 0; i < WARM; i++) { await seg.run(els.video); }
+      setProgress(PB_ID, 85);
       const l0 = performance.now();
       for (let i = 0; i < RUNS; i++) { await seg.run(els.video); }
       const l1 = performance.now();
+      setProgress(PB_ID, 100);
+      showProgress(PB_ID, false);
 
       const liteAvg = (l1 - l0) / RUNS;
       const liteFps = 1000 / liteAvg;
@@ -556,6 +614,7 @@ if (els.compareSegBtn) {
       }
     } catch (err) {
       console.error(err);
+      showProgress('progress-compare-seg', false);
       if (els.compareStatus) els.compareStatus.textContent = `comparison error: ${err?.message || err}`;
     }
   });
