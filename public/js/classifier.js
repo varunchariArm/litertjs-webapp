@@ -2,6 +2,8 @@ import { loadAndCompile, setWebGpuDevice } from "@litertjs/core";
 import { runWithTfjsTensors } from "@litertjs/tfjs-interop";
 import * as tf from "@tensorflow/tfjs";
 import "@tensorflow/tfjs-backend-webgpu";
+import '@tensorflow/tfjs-backend-wasm';
+import { setWasmPaths } from '@tensorflow/tfjs-backend-wasm';
 import { ensureLiteRtOnce } from "./runtime.js";
 
 // The referenced torchvision MobileNetV2 .tflite expects NCHW inputs and TorchVision normalization.
@@ -27,11 +29,15 @@ export class Classifier {
   }
 
   async init() {
+    // Init TFJS backend based on requested accelerator
+    setWasmPaths('/tfwasm/')
     if (this.accelerator === 'webgpu') {
-      if (!('gpu' in navigator)) throw new Error("WebGPU not supported in this browser.");
+      if (!('gpu' in navigator)) {
+        throw new Error("WebGPU not supported in this browser.");
+      }
       await tf.setBackend('webgpu');
     } else {
-      await tf.setBackend('cpu');
+      await tf.setBackend('wasm');
     }
     await tf.ready();
 
@@ -94,31 +100,34 @@ export class Classifier {
     });
 
     // Helper: run once and return topK or null if non-finite
-    const tryRun = (inputTensor) => {
-      return tf.tidy(() => {
-        const outputs = runWithTfjsTensors(this.model, inputTensor);
+    const tryRun = async (inputTensor) => {
+        const cpuData = await inputTensor.data();
+        const cpuTensor = tf.tensor(cpuData, inputTensor.shape, inputTensor.dtype);
+
+        const outputs = runWithTfjsTensors(this.model, cpuTensor);
         const logits = outputs[0]; // [1,1000]
         // Numerically-stable softmax is used by tf.softmax internally
         const probs = tf.softmax(logits);
+
         // Check for non-finite values
         const finite = tf.all(tf.isFinite(probs));
         const ok = finite.arraySync();
         if (!ok) return null;
+
         const squeezed = probs.squeeze(); // [1000]
         const { values, indices } = tf.topk(squeezed, this.topK);
         return { values, indices };
-      });
     };
 
     // Try TorchVision normalization first
     let inp = prepTorchVision();
-    let result = tryRun(inp);
+    let result = await tryRun(inp);
     inp.dispose();
 
     // Fallback to TFLite Mobilenet scaling if non-finite
     if (result === null) {
       const alt = prepTflite();
-      result = tryRun(alt);
+      result = await tryRun(alt);
       alt.dispose();
     }
 

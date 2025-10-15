@@ -1,5 +1,6 @@
 // public/js/runtime.js
 import { loadLiteRt } from "@litertjs/core";
+import { simd, threads } from 'wasm-feature-detect';
 
 const FLAG = "__litert_loaded__";
 
@@ -14,7 +15,11 @@ export async function ensureLiteRtOnce(wasmPath = "/wasm/") {
         if (/already loading|already loaded/i.test(msg)) return; // benign
         throw e;
       })
-      .then(() => { g.ok = true; });
+      .then(async () => { 
+        const [hasSIMD, hasThreads] = await Promise.all([simd(), threads()]);
+        console.log({ hasSIMD, hasThreads, crossOriginIsolated });
+        g.ok = true; 
+      });
   }
   await g.p;
 }
