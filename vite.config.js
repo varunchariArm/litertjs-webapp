@@ -6,15 +6,12 @@ export default defineConfig({
   build: { outDir: '../dist', emptyOutDir: true },
   assetsInclude: ['**/*.wasm'],
   server: {
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp'
+    },
     mimeTypes: { 'application/wasm': ['wasm'] },
     host: true,
     port: 5173,
-  },
-  optimizeDeps: {
-    // Prevent esbuild from touching the backend; we import the dist file directly.
-    exclude: [
-      '@tensorflow/tfjs-backend-wasm',
-      '@tensorflow/tfjs-backend-wasm/dist/tf-backend-wasm.js',
-    ],
   },
 });

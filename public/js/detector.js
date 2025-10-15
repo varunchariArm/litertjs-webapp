@@ -2,6 +2,8 @@ import { loadLiteRt, loadAndCompile, setWebGpuDevice } from "@litertjs/core";
 import { runWithTfjsTensors } from "@litertjs/tfjs-interop";
 import * as tf from "@tensorflow/tfjs";
 import "@tensorflow/tfjs-backend-webgpu";
+import '@tensorflow/tfjs-backend-wasm';
+import { setWasmPaths } from '@tensorflow/tfjs-backend-wasm';
 
 async function assertAsset(url) {
   const res = await fetch(url, { method: 'GET' });
@@ -27,9 +29,10 @@ export class Detector {
 
   async init() {
     // Init TFJS backend based on requested accelerator
+    setWasmPaths('/tfwasm/')
     if (this.accelerator === 'webgpu') {
       if (!('gpu' in navigator)) {
-        throw new Error("WebGPU not supported in this browser. Try Chrome/Edge 121+.");
+        throw new Error("WebGPU not supported in this browser. Try Chrome/Edge 121+");
       }
       await tf.setBackend('webgpu');
     } else {
