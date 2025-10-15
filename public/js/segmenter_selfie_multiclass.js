@@ -8,6 +8,8 @@ import { ensureLiteRtOnce } from "./runtime.js";
 import { runWithTfjsTensors } from "@litertjs/tfjs-interop";
 import * as tf from "@tensorflow/tfjs";
 import "@tensorflow/tfjs-backend-webgpu";
+import '@tensorflow/tfjs-backend-wasm';
+import { setWasmPaths } from '@tensorflow/tfjs-backend-wasm';
 
 function defaultPalette(n) {
   // simple deterministic palette
@@ -49,12 +51,15 @@ export class SegmenterSelfieMulticlass {
   }
 
   async init() {
-    // Pick backend: try WebGPU if requested & available, else CPU
+    // Configure WASM assets location (matches classifier/runtime)
+    setWasmPaths('/tfwasm/');
+
+    // Pick backend: try WebGPU if requested & available, else WASM
     if (this.accelerator === 'webgpu' && ('gpu' in navigator)) {
       await tf.setBackend('webgpu');
     } else {
       this.accelerator = 'wasm';
-      await tf.setBackend('cpu');
+      await tf.setBackend('wasm');
     }
     await tf.ready();
 
@@ -76,7 +81,7 @@ export class SegmenterSelfieMulticlass {
       if (this.accelerator === 'webgpu' && isGpuCompileFailure) {
         console.warn('[SegmenterSelfieMC] WebGPU compile failed; falling back to WASM.', e);
         this.accelerator = 'wasm';
-        await tf.setBackend('cpu');
+        await tf.setBackend('wasm');
         await tf.ready();
         this.model = await loadAndCompile(this.modelUrl, { accelerator: 'wasm' });
       } else {

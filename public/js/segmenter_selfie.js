@@ -6,6 +6,17 @@ import { ensureLiteRtOnce } from "./runtime.js";
 import { runWithTfjsTensors } from "@litertjs/tfjs-interop";
 import * as tf from "@tensorflow/tfjs";
 import "@tensorflow/tfjs-backend-webgpu";
+import '@tensorflow/tfjs-backend-wasm';
+import { setWasmPaths } from '@tensorflow/tfjs-backend-wasm';
+
+// Assert that an asset URL is reachable and not serving HTML fallbacks.
+async function assertAsset(url) {
+  const res = await fetch(url, { method: 'GET' });
+  if (!res.ok) throw new Error(`Asset not found or not served: ${url} (HTTP ${res.status})`);
+  const ct = res.headers.get('content-type') || '';
+  if (ct.includes('text/html')) throw new Error(`Unexpected HTML at ${url}. Did you place the file under public/models/?`);
+  return url;
+}
 
 export class SegmenterSelfie {
   constructor({
@@ -29,16 +40,18 @@ export class SegmenterSelfie {
   }
 
   async init() {
-    // Pick backend: prefer WebGPU, fallback to CPU if unavailable
+    // Configure WASM assets and pick backend: prefer WebGPU, else WASM
+    setWasmPaths('/tfwasm/');
     if (this.accelerator === "webgpu" && ("gpu" in navigator)) {
       await tf.setBackend("webgpu");
     } else {
       this.accelerator = "wasm";
-      await tf.setBackend("cpu");
+      await tf.setBackend("wasm");
     }
     await tf.ready();
 
     await ensureLiteRtOnce(this.wasmPath);
+    await assertAsset(this.modelUrl);
 
     // Try to compile the model with requested accelerator
     try {
@@ -61,7 +74,7 @@ export class SegmenterSelfie {
       if (this.accelerator === 'webgpu' && isGpuCompileFailure) {
         console.warn('[SegmenterSelfie] WebGPU compile failed; falling back to WASM.', e);
         this.accelerator = 'wasm';
-        await tf.setBackend('cpu');
+        await tf.setBackend('wasm');
         await tf.ready();
         this.model = await loadAndCompile(this.modelUrl, { accelerator: 'wasm' });
       } else {
