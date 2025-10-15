@@ -52,6 +52,8 @@ All inference happens locally on the Arm SoC — GPU or CPU — with zero cloud 
 npm install
 # Copy LiteRT wasm runtime files (not checked into Git)
 mkdir -p public/wasm && cp -r node_modules/@litertjs/core/wasm/* public/wasm/
+# Copy Tensorflow wasm runtime files (not checked into Git)
+mkdir -p public/tfwasm && cp -r node_modules/@tensorflow/tfjs-backend-wasm/wasm-out/*.wasm public/tfwasm
 ```
 
 ### Run
